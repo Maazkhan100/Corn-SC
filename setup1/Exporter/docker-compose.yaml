@@ -1,0 +1,118 @@
+version: "3.7"
+
+networks:
+  test:
+    name: fabric_test
+
+services:
+  couchdb4:
+    container_name: couchdb4
+    image: couchdb:3.3.2
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - 5994:5984
+    networks:
+      - test
+
+  couchdb5:
+    container_name: couchdb5
+    image: couchdb:3.3.2
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - 6004:5984
+    networks:
+      - test
+
+  peer0.exporter:
+    container_name: peer0.exporter
+    extends:
+      file: base.yaml
+      service: peer-base
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LOGLEVEL=DEBUG
+      - CORE_PEER_LOCALMSPID=Org3MSP
+
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_test
+
+      - CORE_PEER_ID=peer0.exporter
+      - CORE_PEER_ADDRESS=peer0.exporter:7061
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7061
+      - CORE_PEER_CHAINCODEADDRESS=peer0.exporter:7062
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7062
+      # Peer used to bootstrap gossip within organisation
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer1.exporter:7071
+      # Exposed for discovery Service
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.exporter:7061
+
+      # - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9440
+
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb4:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+      - CORE_METRICS_PROVIDER=prometheus
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/crypto/peer/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/crypto/peer/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/crypto/peer/tls/ca.crt
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/crypto/peer/msp
+    depends_on:
+      - couchdb4
+    ports:
+      - 7061:7061
+    volumes:
+      - ./../../artifacts/channel/crypto-config/peerOrganizations/exporter/peers/peer0.exporter/msp:/etc/hyperledger/crypto/peer/msp
+      - ./../../artifacts/channel/crypto-config/peerOrganizations/exporter/peers/peer0.exporter/tls:/etc/hyperledger/crypto/peer/tls
+      - /var/run/:/host/var/run/
+      - ./:/etc/hyperledger/channel/
+    networks:
+      - test
+
+  peer1.exporter:
+    container_name: peer1.exporter
+    extends:
+      file: base.yaml
+      service: peer-base
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LOGLEVEL=DEBUG
+      - CORE_PEER_LOCALMSPID=Org3MSP
+
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_test
+
+      - CORE_PEER_ID=peer1.exporter
+      - CORE_PEER_ADDRESS=peer1.exporter:7071
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7071
+      - CORE_PEER_CHAINCODEADDRESS=peer1.exporter:7072
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7072
+      # Exposed for discovery Service
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer1.exporter:7071
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.exporter:7061
+
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb5:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+      - CORE_METRICS_PROVIDER=prometheus
+      # - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9440
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/crypto/peer/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/crypto/peer/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/crypto/peer/tls/ca.crt
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/crypto/peer/msp
+    depends_on:
+      - couchdb5
+    ports:
+      - 7071:7071
+    volumes:
+      - ./../../artifacts/channel/crypto-config/peerOrganizations/exporter/peers/peer1.exporter/msp:/etc/hyperledger/crypto/peer/msp
+      - ./../../artifacts/channel/crypto-config/peerOrganizations/exporter/peers/peer1.exporter/tls:/etc/hyperledger/crypto/peer/tls
+      - /var/run/:/host/var/run/
+      - ./:/etc/hyperledger/channel/
+    networks:
+      - test
